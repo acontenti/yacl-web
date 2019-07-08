@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>yamldocjs</title>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/codemirror.min.css" rel="stylesheet"
+		  type="text/css">
+	<link href="https://fonts.googleapis.com/css?family=Roboto+Mono&display=swap" rel="stylesheet" type="text/css">
+	<link href="css/style.css" rel="stylesheet" type="text/css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/3.13.1/js-yaml.min.js" type="text/javascript"></script>
+	<script src="../src/index.js" type="text/javascript"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js" type="text/javascript"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/codemirror.min.js"
+			type="text/javascript"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/mode/yaml/yaml.min.js"
+			type="text/javascript"></script>
+	<script src=https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/mode/css/css.min.js
+			type="text/javascript"></script>
+	<script src=https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/mode/javascript/javascript.min.js
+			type="text/javascript"></script>
+	<script src=https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/mode/xml/xml.min.js
+			type="text/javascript"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/mode/htmlmixed/htmlmixed.min.js"
+			type="text/javascript"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/mode/markdown/markdown.min.js"
+			type="text/javascript"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/addon/mode/overlay.min.js"
+			type="text/javascript"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/mode/gfm/gfm.min.js"
+			type="text/javascript"></script>
+	<script src="js/index.js" type="text/javascript"></script>
+</head>
+<body>
+<main>
+	<h1 id="title">yamldocjs<sub>by Alessandro Contenti on <a
+			href="https://github.com/acontenti/yamldocjs">Github</a></sub></h1>
+	<div>
+		<div style="margin: 10px">
+			<label for="yaml-textarea">yamldoc:</label>
+			<textarea id="yaml-textarea"></textarea>
+		</div>
+		<div style="display:flex; margin: 5px;">
+			<button id="convert-button">convert</button>
+			<button id="clear-button">clear</button>
+			<button disabled id="copy-html-button">copy html</button>
+			<button disabled id="copy-md-button">copy markdown</button>
+			<button disabled id="copy-result-button">copy result</button>
+		</div>
+		<div style="margin: 10px">
+			<label>result:</label>
+			<div id="html-div">
+				<br>
+			</div>
+		</div>
+		<div id="code">
+			<div>
+				<label for="html-textarea">html:</label>
+				<textarea id="html-textarea"></textarea>
+			</div>
+			<div>
+				<label for="md-textarea">markdown:</label>
+				<textarea id="md-textarea"></textarea>
+			</div>
+		</div>
+	</div>
+</main>
+<footer>
+	&copy; 2019 Alessandro Contenti
+</footer>
+</body>
+</html>

@@ -1,0 +1,105 @@
+* {
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
+}
+
+html, body {
+	margin: 0;
+	padding: 0;
+	min-height: 100vh;
+}
+
+body {
+	display: flex;
+	flex-direction: column;
+	font-family: sans-serif;
+}
+
+main {
+	margin: auto;
+}
+
+#title {
+	margin: 10px;
+	font-family: monospace;
+	font-size: 40pt;
+	text-transform: uppercase;
+}
+
+textarea, .CodeMirror {
+	border: 2px solid black;
+	height: auto;
+	width: 100%;
+	font-size: 10pt;
+	font-family: 'Roboto Mono', monospace;
+}
+
+label {
+	font-family: monospace;
+	display: block;
+	font-weight: bold;
+	font-size: 15pt;
+	text-transform: uppercase;
+}
+
+button {
+	font-family: monospace;
+	font-weight: bold;
+	border: 2px solid;
+	padding: 3px 9px;
+	font-size: 14pt;
+	background: white;
+	margin: 6px;
+	text-transform: uppercase;
+}
+
+button:not([disabled]):hover {
+	border: 6px double black;
+	margin: 2px;
+}
+
+footer {
+	padding: 10px;
+	font-family: monospace;
+	text-align: center;
+	font-weight: bold;
+	font-size: 13pt;
+	text-transform: uppercase;
+}
+
+#html-div {
+	border: 2px solid black;
+	padding: 10px;
+}
+
+#code {
+	display: flex;
+}
+
+#code > div {
+	flex-grow: 1;
+	flex-basis: 50%;
+	margin: 0 10px;
+	overflow: hidden;
+}
+
+#code .textarea {
+	font-family: monospace;
+	font-size: 15pt;
+	border: 2px solid black;
+	width: 100%;
+	overflow: auto;
+	white-space: pre;
+}
+
+#title sub {
+	font-size: 35%;
+	vertical-align: baseline;
+	padding: 10px;
+}
+
+main {
+	flex-grow: 1;
+	margin: 0 10px;
+}
