@@ -24,6 +24,8 @@ function objectMap(object, mapFn) {
 
 function styleHtml(node) {
 	if (typeof node !== 'string') return node;
+	if (node.startsWith("data:image/"))
+		return "<img src='" + node + "'  alt='image' />";
 	return node
 		.replace(/</g, "&lt;")
 		.replace(/>/g, "&gt;")
