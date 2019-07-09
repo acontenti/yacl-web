@@ -7,13 +7,17 @@
 html, body {
 	margin: 0;
 	padding: 0;
-	height: 100vh;
+	height: 100vh !important;
 }
 
 body {
 	display: flex;
 	flex-direction: column;
 	font-family: sans-serif;
+}
+
+body.swal2-height-auto {
+	height: 100vh !important;
 }
 
 #title {
@@ -101,7 +105,8 @@ main.open {
 .top-bar {
 	display: flex;
 	margin: 0 10px;
-	justify-content: space-between;
+	padding: 5px 0;
+	flex-wrap: wrap;
 }
 
 .top-bar button {
@@ -161,4 +166,5 @@ main.open {
 	border: 0 solid;
 	border-right-width: 3px;
 	overflow: hidden;
+	width: 70vw;
 }
