@@ -36,13 +36,13 @@ $(() => {
 	});
 	$('#save-button').click(async () => {
 		await saveRecipe(true);
-	});
+	}).attr("disabled", true);
 	$('#close-button').click(async () => {
 		await closeEditor();
-	});
+	}).attr("disabled", true);
 	$('#delete-button').click(async () => {
 		await deleteRecipe();
-	});
+	}).attr("disabled", true);
 	$('#new-button').click(async () => {
 		await newRecipe();
 	});
@@ -96,8 +96,6 @@ async function newRecipe() {
 	if (name) {
 		let user = getUser();
 		db.collection('users').doc(user.uid).collection('recipes').add({
-			name: name,
-			description: "",
 			yacl: emptyYacl(name)
 		}).then((doc) => {
 			loadBook(user);
@@ -219,7 +217,8 @@ function loadBook(user) {
 		book.empty();
 		querySnapshot.forEach(doc => {
 			let it = doc.data();
-			let app = $("<div class='book-entry' data-id='" + doc.id + "'><strong>" + it.name + "</strong><br><em>" + it.description + "</em></div>");
+			let yacl = jsyaml.safeLoad(it.yacl);
+			let app = $("<div class='book-entry' data-id='" + doc.id + "'><strong>" + yacl['name'] + "</strong><br><em>" + yacl['description'] + "</em></div>");
 			app.click(async () => {
 				if (pendingChanges) {
 					if (!await showChangesDialog())

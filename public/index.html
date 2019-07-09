@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>yamldocjs</title>
+	<title>YACL Cookbook</title>
 	<link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/codemirror.min.css" rel="stylesheet"
 		  type="text/css">
 	<link href="https://fonts.googleapis.com/css?family=Roboto+Mono&display=swap" rel="stylesheet" type="text/css">
@@ -33,14 +33,12 @@
 </head>
 <body>
 <header class="open">
-	<h1 id="title">yacl<sub>by Alessandro Contenti on <a href="https://github.com/acontenti/yacl-web">Github</a></sub>
+	<h1 id="title"><span style="word-spacing: -20px;">YACL COOKBOOK</span><sub>by Alessandro Contenti on <a
+			href="https://github.com/acontenti/yacl-web">Github</a></sub>
 	</h1>
 	<div class="top-bar" style="display: none;">
 		<div id="welcome-title">Alessandro Contenti's YACL cookbook</div>
 		<button id="new-button">new recipe</button>
-		<button id="save-button" disabled>save recipe</button>
-		<button id="close-button" disabled>close recipe</button>
-		<button id="delete-button" disabled>delete recipe</button>
 		<button id="logout-button">logout</button>
 	</div>
 	<div id="login-container">
@@ -52,6 +50,11 @@
 
 	</div>
 	<div id="editor">
+		<div class="editor-toolbar">
+			<button id="save-button" disabled>save recipe</button>
+			<button id="close-button" disabled>close recipe</button>
+			<button id="delete-button" disabled>delete recipe</button>
+		</div>
 		<textarea id="yaml-textarea"></textarea>
 	</div>
 </main>
