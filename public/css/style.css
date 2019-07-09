@@ -1,0 +1,164 @@
+* {
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
+}
+
+html, body {
+	margin: 0;
+	padding: 0;
+	height: 100vh;
+}
+
+body {
+	display: flex;
+	flex-direction: column;
+	font-family: sans-serif;
+}
+
+#title {
+	margin: 0 10px;
+	font-family: monospace;
+	font-size: 40pt;
+	text-transform: uppercase;
+	border: 0 solid;
+	border-bottom-width: 3px;
+}
+
+textarea, .CodeMirror {
+	width: 100%;
+	height: 100%;
+	font-size: 10pt;
+	font-family: 'Roboto Mono', monospace;
+}
+
+label {
+	font-family: monospace;
+	display: block;
+	font-weight: bold;
+	font-size: 15pt;
+	text-transform: uppercase;
+}
+
+button:not([disabled]):hover {
+	transform: translateY(-1px);
+}
+
+button:not([disabled]):hover:active {
+	transform: translateY(1px);
+}
+
+button {
+	font-family: monospace;
+	font-weight: bold;
+	border: 2px solid;
+	padding: 3px 9px;
+	font-size: 14pt;
+	background: white;
+	text-transform: uppercase;
+	border-radius: 2px;
+}
+
+footer {
+	padding: 10px;
+	font-family: monospace;
+	text-align: center;
+	font-weight: bold;
+	font-size: 13pt;
+	text-transform: uppercase;
+}
+
+#title sub {
+	font-size: 35%;
+	vertical-align: baseline;
+	padding: 10px;
+}
+
+header {
+	display: flex;
+	flex-direction: column;
+}
+
+header.open {
+	flex-grow: 1;
+}
+
+main {
+	display: none;
+	flex-direction: row;
+	flex-grow: 1;
+	margin: 0 10px;
+	border: 3px solid;
+	border-right-width: 0;
+	border-left-width: 0;
+	overflow: hidden;
+}
+
+main.open {
+	display: flex;
+}
+
+.top-bar {
+	display: flex;
+	margin: 0 10px;
+	justify-content: space-between;
+}
+
+.top-bar button {
+	margin: auto 5px;
+}
+
+#login-container {
+	display: flex;
+	margin: 5px;
+	flex-grow: 1;
+}
+
+#firebaseui-auth-container {
+	margin: auto;
+}
+
+#firebaseui-auth-container button {
+	border: unset;
+	margin: unset;
+}
+
+#welcome-title {
+	font-size: 21pt;
+	font-family: monospace;
+	font-weight: bold;
+	margin: 6px;
+}
+
+#book {
+	flex-grow: 1;
+	border: 0 solid;
+	border-left-width: 3px;
+	border-right-width: 3px;
+	min-width: 30vw;
+}
+
+.book-entry {
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	padding: 10px;
+}
+
+.book-entry:hover {
+	background: rgba(0, 0, 0, 0.2);
+	cursor: pointer;
+}
+
+.book-entry:hover:active {
+	background: rgba(0, 0, 0, 0.3);
+}
+
+#editor {
+	display: none;
+	flex-grow: 1;
+	border: 0 solid;
+	border-right-width: 3px;
+	overflow: hidden;
+}

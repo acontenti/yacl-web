@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>yamldocjs</title>
+	<link href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/codemirror.min.css" rel="stylesheet"
+		  type="text/css">
+	<link href="https://fonts.googleapis.com/css?family=Roboto+Mono&display=swap" rel="stylesheet" type="text/css">
+	<link type="text/css" rel="stylesheet" href="https://cdn.firebase.com/libs/firebaseui/3.5.2/firebaseui.css"/>
+	<link href="css/style.css" rel="stylesheet" type="text/css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/3.13.1/js-yaml.min.js" type="text/javascript"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js" type="text/javascript"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/codemirror.min.js"
+			type="text/javascript"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/mode/yaml/yaml.min.js"
+			type="text/javascript"></script>
+	<!-- update the version number as needed -->
+	<script defer src="/__/firebase/6.2.4/firebase-app.js"></script>
+	<!-- include only the Firebase features as you need -->
+	<script defer src="/__/firebase/6.2.4/firebase-auth.js"></script>
+	<script defer src="/__/firebase/6.2.4/firebase-firestore.js"></script>
+
+	<script src="https://cdn.firebase.com/libs/firebaseui/3.5.2/firebaseui.js"></script>
+	<!-- initialize the SDK after all desired features are loaded -->
+	<script defer src="/__/firebase/init.js"></script>
+	<script src="js/yamldoc.js" type="text/javascript"></script>
+	<script src="js/index.js" type="text/javascript"></script>
+</head>
+<body>
+<header class="open">
+	<h1 id="title">yacl<sub>by Alessandro Contenti on <a href="https://github.com/acontenti/yacl-web">Github</a></sub>
+	</h1>
+	<div class="top-bar" style="display: none;">
+		<div id="welcome-title">Alessandro Contenti's YACL cookbook</div>
+		<button id="logout-button">logout</button>
+	</div>
+	<div id="login-container">
+		<div id="firebaseui-auth-container"></div>
+	</div>
+</header>
+<main>
+	<div id="book">
+
+	</div>
+	<div id="editor">
+		<textarea id="yaml-textarea"></textarea>
+	</div>
+</main>
+<footer>
+	&copy; 2019 Alessandro Contenti
+</footer>
+</body>
+</html>
