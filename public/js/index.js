@@ -72,8 +72,7 @@ async function showChangesDialog() {
 		confirmButtonText: 'Save and continue',
 		showLoaderOnConfirm: true,
 		preConfirm: async () => {
-			await saveRecipe();
-			return true;
+			return await saveRecipe();
 		},
 		cancelButtonText: 'Cancel'
 	});
@@ -141,6 +140,7 @@ async function closeEditor() {
 				return;
 		}
 		openRecipe = undefined;
+		$('.book-entry').removeClass('open');
 		$('#editor').hide();
 		getEditor().setValue('');
 		$('#save-button').attr("disabled", true);
@@ -152,29 +152,46 @@ async function closeEditor() {
 async function saveRecipe(showDialog = false) {
 	async function save() {
 		if (openRecipe !== undefined && pendingChanges) {
+			let value = getEditor().getValue();
+			try {
+				jsyaml.safeLoad(value);
+			} catch (e) {
+				Swal.fire({
+					title: 'Cannot save recipe',
+					html: '<pre class="exception">Error:<br>' + e.message + '</pre>',
+					type: 'error'
+				});
+				return false;
+			}
 			let user = getUser();
 			await db.collection('users').doc(user.uid).collection('recipes').doc(openRecipe).update({
-				yacl: getEditor().getValue()
+				yacl: value
 			});
 			pendingChanges = false;
 			loadBook(user);
 			$('#save-button').attr("disabled", true);
+			return true;
 		}
+		return true;
 	}
 
 	if (showDialog) {
-		await Swal.fire({
+		let {value: result} = await Swal.fire({
 			title: 'Saving',
 			allowOutsideClick: false,
 			allowEscapeKey: false,
 			showConfirmButton: false,
 			onBeforeOpen: async () => {
 				Swal.showLoading();
-				await save();
-				Swal.close();
+				let result = await save();
+				if (result) Swal.close();
+				return result;
 			}
 		});
-	} else await save();
+		return result;
+	} else {
+		return await save();
+	}
 }
 
 function getEditor() {
@@ -205,6 +222,8 @@ function openEditor(docId, user) {
 		$('#editor').show();
 		getEditor().setValue(it.yacl);
 		openRecipe = docId;
+		$('.book-entry').removeClass('open');
+		$('.book-entry[data-id=' + openRecipe + ']').addClass('open');
 		$('#close-button').attr("disabled", false);
 		$('#delete-button').attr("disabled", false);
 	});
@@ -216,9 +235,17 @@ function loadBook(user) {
 		let book = $('#book');
 		book.empty();
 		querySnapshot.forEach(doc => {
+			let desc;
+			let name;
+			let yacl;
 			let it = doc.data();
-			let yacl = jsyaml.safeLoad(it.yacl);
-			let app = $("<div class='book-entry' data-id='" + doc.id + "'><strong>" + yacl['name'] + "</strong><br><em>" + yacl['description'] + "</em></div>");
+			try {
+				yacl = jsyaml.safeLoad(it.yacl);
+				name = yacl['name'];
+				desc = yacl['description'];
+			} catch (e) {
+			}
+			let app = $("<div class='book-entry' data-id='" + doc.id + "'><strong>" + name + "</strong><br><em>" + desc + "</em></div>");
 			app.click(async () => {
 				if (pendingChanges) {
 					if (!await showChangesDialog())
