@@ -1,3 +1,4 @@
+const sessionId = Math.random().toString(36).substr(2, 9);
 let openRecipe;
 let pendingChanges = false;
 let yamldoc_editor;
@@ -48,6 +49,18 @@ $(() => {
 	});
 });
 
+$(window).on('beforeunload', function () {
+	let user = getUser();
+	db.collection('users').doc(user.uid).update({
+		sessions: firebase.firestore.FieldValue.arrayRemove(sessionId)
+	});
+	if (openRecipe && pendingChanges) {
+		db.collection('users').doc(user.uid).collection('recipes').doc(openRecipe).update({
+			locked: ''
+		});
+	}
+});
+
 function emptyYacl(name) {
 	return "name: " + name + "\n" +
 		"description:\n" +
@@ -94,12 +107,11 @@ async function newRecipe() {
 	});
 	if (name) {
 		let user = getUser();
-		db.collection('users').doc(user.uid).collection('recipes').add({
+		let doc = await db.collection('users').doc(user.uid).collection('recipes').add({
 			yacl: emptyYacl(name)
-		}).then((doc) => {
-			loadBook(user);
-			openEditor(doc.id, user);
 		});
+		loadBook(user);
+		await openEditor(doc.id, user);
 	}
 }
 
@@ -166,7 +178,7 @@ async function saveRecipe(showDialog = false) {
 			let user = getUser();
 			await db.collection('users').doc(user.uid).collection('recipes').doc(openRecipe).update({
 				yacl: value,
-				locked: false
+				locked: ''
 			});
 			pendingChanges = false;
 			loadBook(user);
@@ -207,7 +219,7 @@ function getEditor() {
 				pendingChanges = true;
 				let user = getUser();
 				db.collection('users').doc(user.uid).collection('recipes').doc(openRecipe).update({
-					locked: true
+					locked: sessionId
 				});
 				$('#save-button').attr("disabled", false);
 			}
@@ -220,36 +232,40 @@ function getUser() {
 	return firebase.auth().currentUser;
 }
 
-function openEditor(docId, user) {
+async function openEditor(docId, user) {
 	user = user || getUser();
-	const docReference = db.collection('users').doc(user.uid).collection('recipes').doc(docId);
-	docReference.get().then(doc => {
-		const it = doc.data();
-		if (it.locked === true) {
-			Swal.fire('Cannot open recipe', 'This recipe is being edited on another instance of YACL Cookbook', 'error');
+	const docReference = await db.collection('users').doc(user.uid).collection('recipes').doc(docId);
+	let doc = await docReference.get();
+	const it = doc.data();
+	if (it.locked && it.locked !== '' && it.locked !== sessionId) {
+		let session = await db.collection('users').doc(user.uid).collection('sessions').doc(it.locked).get();
+		if (!session.exists) {
+			await docReference.update({locked: ''});
 		} else {
-			$('#editor').show();
-			getEditor().setValue(it.yacl);
-			openRecipe = docId;
-			$('.book-entry').removeClass('open');
-			$('.book-entry[data-id=' + openRecipe + ']').addClass('open');
-			$('#close-button').attr("disabled", false);
-			$('#delete-button').attr("disabled", false);
-			docReference.onSnapshot(doc => {
-				if (!pendingChanges && !!doc.metadata.hasPendingWrites !== true) {
-					let it = doc.data();
-					if (it.locked === true) {
-						Swal.fire('Locking editing', 'This recipe is being edited on another instance of YACL Cookbook', 'warning');
-						getEditor().setOption('readOnly', true);
-					} else {
-						if (getEditor().getOption('readOnly') === true) {
-							getEditor().setOption('readOnly', false);
-							Swal.fire('Unlocking editing', 'You can now edit this recipe', 'success');
-						}
-						getEditor().setValue(it.yacl);
-					}
+			Swal.fire('Cannot open recipe', 'This recipe is being edited on another instance of YACL Cookbook', 'error');
+			return;
+		}
+	}
+	$('#editor').show();
+	getEditor().setValue(it.yacl);
+	openRecipe = docId;
+	$('.book-entry').removeClass('open');
+	$('.book-entry[data-id=' + openRecipe + ']').addClass('open');
+	$('#close-button').attr("disabled", false);
+	$('#delete-button').attr("disabled", false);
+	docReference.onSnapshot(doc => {
+		if (!pendingChanges && !!doc.metadata.hasPendingWrites !== true) {
+			let it = doc.data();
+			if (it.locked && it.locked !== '' && it.locked !== sessionId) {
+				Swal.fire('Locking editing', 'This recipe is being edited on another instance of YACL Cookbook', 'warning');
+				getEditor().setOption('readOnly', true);
+			} else {
+				if (getEditor().getOption('readOnly') === true) {
+					getEditor().setOption('readOnly', false);
+					Swal.fire('Unlocking editing', 'You can now edit this recipe', 'success');
 				}
-			});
+				getEditor().setValue(it.yacl);
+			}
 		}
 	});
 }
@@ -264,19 +280,20 @@ function loadBook(user) {
 			let name;
 			let yacl;
 			let it = doc.data();
+			let docId = doc.id;
 			try {
 				yacl = jsyaml.safeLoad(it.yacl);
 				name = yacl['name'];
 				desc = yacl['description'];
 			} catch (e) {
 			}
-			let app = $("<div class='book-entry' data-id='" + doc.id + "'><strong>" + name + "</strong><br><em>" + desc + "</em></div>");
+			let app = $("<div class='book-entry' data-id='" + docId + "'><strong>" + name + "</strong><br><em>" + desc + "</em></div>");
 			app.click(async () => {
 				if (pendingChanges) {
 					if (!await showChangesDialog())
 						return;
 				}
-				openEditor(doc.id);
+				await openEditor(docId);
 			});
 			book.append(app);
 		});
@@ -285,6 +302,9 @@ function loadBook(user) {
 
 function login() {
 	let user = firebase.auth().currentUser;
+	db.collection('users').doc(user.uid).update({
+		sessions: firebase.firestore.FieldValue.arrayUnion(sessionId)
+	});
 	$('header').toggleClass('open');
 	$('main').toggleClass('open');
 	$('.top-bar').show();
