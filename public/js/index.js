@@ -104,7 +104,7 @@ async function newRecipe() {
 }
 
 async function deleteRecipe() {
-	if (openRecipe !== undefined) {
+	if (openRecipe) {
 		async function doDelete() {
 			let user = getUser();
 			await db.collection('users').doc(user.uid).collection('recipes').doc(openRecipe).delete();
@@ -134,7 +134,7 @@ async function deleteRecipe() {
 }
 
 async function closeEditor() {
-	if (openRecipe !== undefined) {
+	if (openRecipe) {
 		if (pendingChanges) {
 			if (!await showChangesDialog())
 				return;
@@ -151,7 +151,7 @@ async function closeEditor() {
 
 async function saveRecipe(showDialog = false) {
 	async function save() {
-		if (openRecipe !== undefined && pendingChanges) {
+		if (openRecipe && pendingChanges) {
 			let value = getEditor().getValue();
 			try {
 				jsyaml.safeLoad(value);
@@ -165,7 +165,8 @@ async function saveRecipe(showDialog = false) {
 			}
 			let user = getUser();
 			await db.collection('users').doc(user.uid).collection('recipes').doc(openRecipe).update({
-				yacl: value
+				yacl: value,
+				locked: false
 			});
 			pendingChanges = false;
 			loadBook(user);
@@ -202,8 +203,12 @@ function getEditor() {
 			viewportMargin: Infinity
 		});
 		yamldoc_editor.on('change', (instance, changeObj) => {
-			if (changeObj.origin !== 'setValue' && !pendingChanges) {
+			if (changeObj.origin !== 'setValue' && openRecipe && !pendingChanges) {
 				pendingChanges = true;
+				let user = getUser();
+				db.collection('users').doc(user.uid).collection('recipes').doc(openRecipe).update({
+					locked: true
+				});
 				$('#save-button').attr("disabled", false);
 			}
 		});
@@ -217,15 +222,35 @@ function getUser() {
 
 function openEditor(docId, user) {
 	user = user || getUser();
-	db.collection('users').doc(user.uid).collection('recipes').doc(docId).get().then(doc => {
-		let it = doc.data();
-		$('#editor').show();
-		getEditor().setValue(it.yacl);
-		openRecipe = docId;
-		$('.book-entry').removeClass('open');
-		$('.book-entry[data-id=' + openRecipe + ']').addClass('open');
-		$('#close-button').attr("disabled", false);
-		$('#delete-button').attr("disabled", false);
+	const docReference = db.collection('users').doc(user.uid).collection('recipes').doc(docId);
+	docReference.get().then(doc => {
+		const it = doc.data();
+		if (it.locked === true) {
+			Swal.fire('Cannot open recipe', 'This recipe is being edited on another instance of YACL Cookbook', 'error');
+		} else {
+			$('#editor').show();
+			getEditor().setValue(it.yacl);
+			openRecipe = docId;
+			$('.book-entry').removeClass('open');
+			$('.book-entry[data-id=' + openRecipe + ']').addClass('open');
+			$('#close-button').attr("disabled", false);
+			$('#delete-button').attr("disabled", false);
+			docReference.onSnapshot(doc => {
+				if (!pendingChanges && !!doc.metadata.hasPendingWrites !== true) {
+					let it = doc.data();
+					if (it.locked === true) {
+						Swal.fire('Locking editing', 'This recipe is being edited on another instance of YACL Cookbook', 'warning');
+						getEditor().setOption('readOnly', true);
+					} else {
+						if (getEditor().getOption('readOnly') === true) {
+							getEditor().setOption('readOnly', false);
+							Swal.fire('Unlocking editing', 'You can now edit this recipe', 'success');
+						}
+						getEditor().setValue(it.yacl);
+					}
+				}
+			});
+		}
 	});
 }
 
