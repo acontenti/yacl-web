@@ -86,8 +86,6 @@ main {
 	flex-grow: 1;
 	margin: 0 10px;
 	border: 3px solid;
-	border-right-width: 0;
-	border-left-width: 0;
 	overflow: hidden;
 }
 
@@ -130,10 +128,8 @@ main.open {
 
 #book {
 	flex-grow: 1;
-	border: 0 solid;
-	border-left-width: 3px;
-	border-right-width: 3px;
 	min-width: 30vw;
+	overflow: auto;
 }
 
 .book-entry {
@@ -160,8 +156,6 @@ main.open {
 #editor {
 	display: none;
 	flex-grow: 1;
-	border: 0 solid;
-	border-right-width: 3px;
 	overflow: hidden;
 }
 
@@ -224,4 +218,25 @@ pre.exception {
 	padding: 5px;
 	background: rgba(0, 0, 0, 0.1);
 	border-radius: 2px;
+}
+
+@media (max-width: 600px) {
+	main {
+		flex-direction: column;
+		overflow: unset;
+	}
+
+	#book {
+		max-height: 50vh;
+	}
+
+	#editor {
+		border-left-width: 3px;
+		border-top-width: 3px;
+	}
+}
+
+.flex-divider {
+	padding: 2px 2px 1px 1px;
+	background: black;
 }
