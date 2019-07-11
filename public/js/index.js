@@ -3,30 +3,29 @@ let openRecipe;
 let pendingChanges = false;
 let yamldoc_editor;
 let db;
-$(() => {
+$(async () => {
 	db = firebase.firestore();
-	firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 	const ui = new firebaseui.auth.AuthUI(firebase.auth());
 	ui.start('#firebaseui-auth-container', {
 		callbacks: {
-			signInSuccessWithAuthResult: function (authResult, redirectUrl) {
-				let user = firebase.auth().currentUser;
-				db.collection("users").doc(user.uid).get().then(docSnapshot => {
-					if (!docSnapshot.exists) {
-						db.collection("users").doc(user.uid).set().then(() => {
-							login();
-						});
-					} else login();
-				});
-				return false;
-			}
+			signInSuccessWithAuthResult: () => false
 		},
 		signInFlow: 'popup',
-		signInSuccessUrl: '/',
 		credentialHelper: firebaseui.auth.CredentialHelper.NONE,
 		signInOptions: [
 			firebase.auth.EmailAuthProvider.PROVIDER_ID
 		]
+	});
+	firebase.auth().onAuthStateChanged(user => {
+		if (user) {
+			db.collection("users").doc(user.uid).get().then(docSnapshot => {
+				if (!docSnapshot.exists) {
+					db.collection("users").doc(user.uid).set().then(() => {
+						login();
+					});
+				} else login();
+			});
+		}
 	});
 	$('#logout-button').click(function () {
 		if (getUser()) {
