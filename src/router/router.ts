@@ -8,6 +8,8 @@ import "firebase/auth";
 
 Vue.use(VueRouter);
 
+const Empty = {template: "<div class='empty'></div>"};
+
 const routes = [
 	{
 		path: "/",

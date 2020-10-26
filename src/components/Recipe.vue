@@ -28,12 +28,15 @@
 					<div v-show="recipe.image !== undefined && recipe.image !== ''"
 						 :style="'background-image: url(\'' + recipe.image + '\')'" class="image"/>
 				</div>
-				<div class="ingredients-container">
+				<div v-if="recipe.ingredients" class="ingredients-container">
 					<h3>Ingredients</h3>
 					<div class="controls">
-						<button @click="mode = null">Original</button>
-						<button @click="mode = 'metric'">Metric</button>
-						<label><span>Scalamento:</span><input v-model="scaleFactor" type="number"/></label>
+						<button :class="{on:mode===null}" @click="mode=null">Original</button>
+						<button :class="{on:mode==='metric'}" @click="mode='metric'">Metric</button>
+						<label>
+							<span>Scale:</span>
+							<input v-model="scaleFactor" min="0" step="0.25" type="number"/>
+						</label>
 					</div>
 					<table class="ingredients">
 						<tr v-for="(quantity, ingredient, i) in recipe.ingredients" :key="'ingredient-' + i"
@@ -45,33 +48,38 @@
 						</tr>
 					</table>
 				</div>
-				<h3>Instructions</h3>
-				<table class="instructions">
-					<thead>
-					<tr>
-						<th>Type</th>
-						<th>Text</th>
-						<th>Time</th>
-					</tr>
-					</thead>
-					<tr v-for="(instruction, i) in recipe.instructions" :key="'instruction-' + i" class="instruction">
-						<td>{{ (instruction.type || "") | formatType }}</td>
-						<td>{{ instruction.text || instruction }}</td>
-						<td>{{ (instruction.time || "") | parse | formatTime }}</td>
-					</tr>
-				</table>
+				<div v-if="recipe.instructions" class="instructions-container">
+					<h3>Instructions</h3>
+					<table class="instructions">
+						<thead>
+						<tr>
+							<th>Type</th>
+							<th>Text</th>
+							<th>Time</th>
+						</tr>
+						</thead>
+						<tr v-for="(instruction, i) in recipe.instructions" :key="'instruction-' + i"
+							class="instruction">
+							<td>{{ (instruction.type || "") | formatType }}</td>
+							<td>{{ instruction.text || instruction }}</td>
+							<td>{{ (instruction.time || "") | parseTime | formatTime }}</td>
+						</tr>
+					</table>
+				</div>
 			</div>
 		</div>
 	</div>
 </template>
 
 <script>
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
+
 import {codemirror} from "vue-codemirror";
 import "codemirror/mode/yaml/yaml";
 import "codemirror/lib/codemirror.css";
 import jsyaml from "js-yaml";
 import humanizeDuration from "humanize-duration";
-import parse from "parse-duration";
+import parseTime from "parse-duration";
 import Utils from "@/util/Utils.ts";
 
 export default {
@@ -92,8 +100,8 @@ export default {
 		};
 	},
 	filters: {
-		parse(time) {
-			return parse(time);
+		parseTime(time) {
+			return parseTime(time);
 		},
 		formatTime(millis) {
 			if (millis > 0)
@@ -121,7 +129,7 @@ export default {
 			return (this.recipe.instructions ?? []).reduce((last, it) => {
 				if (it.time) {
 					if (it.type === type) {
-						return last + parse(it.time);
+						return last + parseTime(it.time);
 					}
 				}
 				return last;
@@ -236,6 +244,7 @@ export default {
 			}).then((result) => {
 				if (result.value) {
 					this.$swal("Recipe deleted", "", "success");
+					this.closeRecipe();
 				}
 			});
 		},
@@ -278,7 +287,7 @@ export default {
 			const user = this.$firebase.auth().currentUser;
 			const userDoc = db.collection("users").doc(user.uid);
 			const docReference = userDoc.collection("recipes").doc(docId);
-			docReference.get().then(async doc => {
+			docReference.get().then(doc => {
 				const it = doc.data();
 				this.yaml = it.yacl;
 				this.recipe = jsyaml.safeLoad(this.yaml);
@@ -299,6 +308,7 @@ export default {
 					this.recipe = jsyaml.safeLoad(this.yaml);
 				}
 			});
+
 		}
 	},
 	mounted() {
@@ -401,17 +411,30 @@ export default {
 			align-items: center;
 			justify-content: start;
 
-			* {
-				margin: 5px;
+			button {
+				margin: 5px 0;
+				border-radius: 0;
+				transform: none !important;
+
+				&.on {
+					color: white;
+					border-color: black;
+					background-color: black;
+				}
+			}
+
+			label {
+				margin: 5px 10px;
 			}
 
 			input {
 				width: 100px;
+				margin: 5px;
 			}
 		}
 
 		.ingredients {
-			margin: 10px 5px;
+			margin: 10px 0;
 			border-collapse: collapse;
 
 			.ingredient {
@@ -437,13 +460,15 @@ export default {
 		}
 	}
 
-	.instructions {
-		border-collapse: collapse;
+	.instructions-container {
+		.instructions {
+			border-collapse: collapse;
 
-		.instruction {
-			& > * {
-				border: 2px solid black;
-				padding: 5px;
+			.instruction {
+				& > * {
+					border: 2px solid black;
+					padding: 5px;
+				}
 			}
 		}
 	}

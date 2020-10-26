@@ -11,6 +11,7 @@ export default class Utils {
 		"hl": 100000, "dal": 10000, "l": 1000, "dl": 100, "cl": 10, "ml": 1
 	};
 	private static otherVolumes: { [key: string]: number } = {
+		"pinch": 0.31,
 		"tsp": 4.92892159375,
 		"tbsp": 14.78676478125,
 		"fl oz": 29.5735295625,
@@ -60,5 +61,17 @@ export default class Utils {
 
 	static isWeight(unit: string): boolean {
 		return unit in Utils.weights;
+	}
+
+	static getEmptyRecipe(name: string): string {
+		return "name: " + name + "\n" +
+			"description:\n" +
+			"quantity:\n" +
+			"category:\n" +
+			"cuisine:\n" +
+			"image:\n" +
+			"tags:\n" +
+			"ingredients:\n" +
+			"instructions:\n";
 	}
 }
