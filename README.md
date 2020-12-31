@@ -1,10 +1,22 @@
-# yacl-web
+# YACL (yacl-web)
 
-***A YACL-powered cookbook***
+Yet Another Cookbook Language
 
-YACL *(YAMLDOC As Cookbook Language)* is based on
-YAMLDOC *(YAML As Markup Language for DOCumentation)*.  
-YACL is a Firebase-powered cloud cookbook software.  
-This is the web client.
+## Install the dependencies
+```bash
+yarn
+```
 
-	© 2019 Alessandro Contenti
+### Start the app in development mode (hot-code reloading, error reporting, etc.)
+```bash
+quasar dev
+```
+
+
+### Build the app for production
+```bash
+quasar build
+```
+
+### Customize the configuration
+See [Configuring quasar.conf.js](https://quasar.dev/quasar-cli/quasar-conf-js).

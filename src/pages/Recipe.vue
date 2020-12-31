@@ -1,0 +1,510 @@
+<template>
+	<q-page id="editor" padding>
+		<portal to="toolbar">
+			<q-btn v-if="pendingChanges" flat icon="save" round @click="saveRecipe(true)">
+				<q-tooltip>Save recipe</q-tooltip>
+			</q-btn>
+			<q-btn v-else flat icon="edit" round @click="editRecipe">
+				<q-tooltip>Edit recipe source</q-tooltip>
+			</q-btn>
+			<q-btn flat icon="delete" round @click="deleteRecipe">
+				<q-tooltip>Delete recipe</q-tooltip>
+			</q-btn>
+		</portal>
+		<codemirror v-if="pendingChanges" v-model="yaml" :options="cmOptions" class="yaml-textarea"/>
+		<div v-if="recipe && !pendingChanges" class="recipe-viewer">
+			<div class="header">
+				<div class="info">
+					<h3 class="name">
+						{{ recipe.name }}
+					</h3>
+					<div class="desc">{{ recipe.description }}</div>
+					<div class="tags">
+						<q-chip v-for="(tag, i) in recipe.tags" :key="'tag-' + i" :label="tag"/>
+					</div>
+					<div class="category"><strong>Category:</strong> {{ recipe.category }}</div>
+					<div class="quantity"><strong>Quantity:</strong> {{ recipe.quantity }}</div>
+					<div class="source"><strong>Source:</strong> {{ recipe.source || "unknown" }}</div>
+					<div class="time">
+						<div class="total"><strong>Total time:</strong> {{ getTotalTime() | formatTime }}</div>
+						<div><strong>Preparation time:</strong> {{ getTime("prep") | formatTime }}</div>
+						<div><strong>Cooking time:</strong> {{ getTime("cook") | formatTime }}</div>
+						<div><strong>Waiting time:</strong> {{ getTime("wait") | formatTime }}</div>
+					</div>
+				</div>
+				<div v-show="recipe.image !== undefined && recipe.image !== ''"
+					 :style="'background-image: url(\'' + recipe.image + '\')'" class="image"/>
+			</div>
+			<div :class="{row: $q.screen.gt.sm}" class="no-wrap items-start">
+				<q-table v-if="recipe.ingredients" :columns="ingredientsColumns" :data="ingredients"
+						 :rows-per-page-options="[0]" :selected.sync="selectedIngredients" bordered
+						 class="q-mx-md" flat hide-pagination hide-selected-banner row-key="name"
+						 selection="multiple" separator="cell" style="min-width: 350px"
+						 table-header-class="text-uppercase">
+					<template v-slot:top-left>
+						<h4 class="q-mt-none q-mb-sm">Ingredients</h4>
+					</template>
+					<template v-slot:top-right>
+						<q-toolbar>
+							<q-btn-toggle v-model="mode"
+										  :options="[{label:'Original', value:null},{label:'Metric', value: 'metric'}]"
+										  class="q-mr-md" color="white" rounded
+										  style="border: 1px solid var(--q-color-primary)" text-color="primary"
+										  toggle-color="primary" unelevated/>
+							<q-input v-model.number="scaleFactor" dense label="Scale:" max="100" min="0" outlined
+									 step="0.25" type="number"/>
+						</q-toolbar>
+					</template>
+					<template v-slot:body="props">
+						<q-tr :props="props">
+							<q-td auto-width>
+								<q-checkbox v-model="props.selected"/>
+							</q-td>
+							<q-td key="name" :props="props" auto-width>
+								{{ props.row.name }}
+							</q-td>
+							<q-td key="quantity" :props="props">
+								{{ props.row.quantity }}
+							</q-td>
+						</q-tr>
+					</template>
+				</q-table>
+				<q-timeline v-if="recipe.instructions"
+							class="q-px-lg q-my-none q-py-md q-table--bordered q-table__card q-table--flat"
+							style="width: auto;">
+					<q-timeline-entry heading tag="h4">Instructions</q-timeline-entry>
+					<q-timeline-entry v-for="(instruction, i) in recipe.instructions"
+									  :key="'instruction-' + i" :body="instruction.text || instruction"
+									  :icon="getTypeIcon(instruction.type)">
+						<template v-slot:subtitle>
+							<span class="text-subtitle1 text-bold">Step {{ i + 1 }}:&ensp;</span>
+							<span class="text-subtitle2">{{ instruction.time | parseTime | formatTime }}</span>
+						</template>
+					</q-timeline-entry>
+				</q-timeline>
+			</div>
+		</div>
+	</q-page>
+</template>
+
+<script lang="ts">
+import {codemirror} from "vue-codemirror";
+import "codemirror/mode/yaml/yaml";
+import "codemirror/lib/codemirror.css";
+import jsyaml from "js-yaml";
+import parseTime from "parse-duration";
+import Utils from "src/util/utils";
+import {Component, Vue} from "vue-property-decorator";
+import humanizeDuration from "humanize-duration";
+import {Instruction, InstructionType, Recipe} from "src/util/model";
+import {NavigationGuardNext, Route} from "vue-router/types/router";
+import CodeMirror from "codemirror";
+
+@Component<RecipeComponent>({
+	components: {
+		codemirror
+	},
+	meta: function () {
+		return {
+			title: this.title
+		};
+	},
+	filters: {
+		parseTime(time: string) {
+			return time ? parseTime(time) : undefined;
+		},
+		formatTime(millis: number) {
+			if (millis && millis > 0)
+				return humanizeDuration(millis);
+			else return undefined;
+		}
+	}
+})
+export default class RecipeComponent extends Vue {
+	id: string | null = null;
+	yaml: string | null = null;
+	recipe: Recipe | null = null;
+	recipeName = "";
+	pendingChanges = false;
+	scaleFactor = 1;
+	mode: string | null = null;
+	cmOptions: CodeMirror.EditorConfiguration = {
+		mode: "yaml",
+		readOnly: false,
+		lineNumbers: true
+	};
+	selectedIngredients = [];
+	ingredientsColumns = [
+		{
+			name: "name",
+			label: "Name",
+			field: "name",
+			align: "left",
+			sortable: true,
+			classes: "text-bold text-capitalize"
+		},
+		{
+			name: "quantity", label: "Quantity", field: "quantity",
+			align: "left", sortable: true
+		}
+	];
+	unsubscribe: (() => void) | null = null;
+	title= "";
+
+	get ingredients() {
+		if (!this.recipe?.ingredients) return [];
+		let ingredients = Array.isArray(this.recipe.ingredients) ? this.recipe.ingredients : [this.recipe.ingredients];
+		return ingredients.map(section => Object.entries(section).map(([name, quantity]) => ({
+			name: name,
+			quantity: this.computedQuantity(quantity) + " " + this.computedUnit(quantity)
+		}))).reduce((previousValue, currentValue) => previousValue.concat(currentValue), []);
+	}
+
+	static isInstruction(it: Instruction | string): it is Instruction {
+		return typeof it !== "string";
+	}
+
+	getTotalTime() {
+		return this.getTime("prep") + this.getTime("cook") + this.getTime("wait");
+	}
+
+	getTime(type: InstructionType) {
+		return this.recipe?.instructions?.reduce<number>((last: number, it: Instruction | string) => {
+			if (RecipeComponent.isInstruction(it) && it.time && it.type === type) {
+				return last + (parseTime(it.time) ?? 0);
+			} else return last;
+		}, 0) ?? 0;
+	}
+
+	getTypeIcon(type: InstructionType) {
+		switch (type) {
+			case "cook":
+				return "microwave";
+			case "prep":
+				return "local_dining";
+			case "wait":
+				return "update";
+			default:
+				return null;
+		}
+	}
+
+	computedQuantity(quantity?: string) {
+		if (!quantity) return "as needed";
+		let [value_, ...unit_] = quantity.toString().split(" ");
+		if (!value_) return "";
+		const unit = unit_.join(" ");
+		let value = Number.parseFloat(value_);
+		if (unit) {
+			if (this.mode === "metric") {
+				value = Utils.toMetricValue(unit, value);
+			}
+		}
+		return Utils.round(value * this.scaleFactor);
+	}
+
+	computedUnit(quantity?: string) {
+		if (!quantity) return "";
+		const unit = quantity.toString().split(" ")[1];
+		if (unit) {
+			if (this.mode === "metric") {
+				return Utils.toMetricUnit(unit);
+			}
+			return unit;
+		} else return "";
+	}
+
+	loadRecipe() {
+		this.recipe = jsyaml.safeLoad(this.yaml ?? "") as Recipe | null;
+		this.recipeName = this.recipe?.name ?? "";
+		this.title = "YACL - " + this.recipeName;
+	}
+
+	async save() {
+		if (this.pendingChanges) {
+			const db = this.$firebase.firestore();
+			const user = this.$firebase.auth().currentUser;
+			if (!user || !this.id) {
+				this.$logout();
+				return;
+			}
+			try {
+				this.loadRecipe();
+			} catch (e) {
+				this.$q.dialog({
+					title: "Cannot save recipe",
+					message: "<pre class=\"exception\">Error:<br>" + e.message + "</pre>",
+					html: true,
+					type: "error"
+				});
+				return false;
+			}
+			await db.collection("users").doc(user.uid).collection("recipes").doc(this.id).update({
+				yacl: this.yaml,
+				locked: ""
+			});
+			this.pendingChanges = false;
+			return true;
+		}
+		return true;
+	}
+
+	async saveRecipe(showDialog = false) {
+		if (showDialog) {
+			this.$q.loading.show({message: "Saving"});
+			const result = await this.save();
+			this.$q.loading.hide();
+			return result;
+		} else {
+			return await this.save();
+		}
+	}
+
+	showChangesDialog() {
+		return new Promise(resolve => {
+			let dialog = this.$q.dialog({
+				title: "Unsaved recipe",
+				message: "You have pending changes in currently open recipe",
+				type: "warning",
+				cancel: "Cancel",
+				ok: "Save and continue"
+			}).onOk(async () => {
+				dialog.update({
+					ok: false,
+					cancel: false,
+					progress: true
+				});
+				resolve(await this.saveRecipe());
+			}).onCancel(() => {
+				resolve(false);
+			});
+		});
+	}
+
+	async closeRecipe() {
+		if (this.pendingChanges) {
+			if (!(await this.showChangesDialog()))
+				return;
+		}
+		await this.$router.push({name: "app"});
+	}
+
+	async doDelete() {
+		const db = this.$firebase.firestore();
+		const user = this.$firebase.auth().currentUser;
+		if (!user || !this.id) {
+			this.$logout();
+			return;
+		}
+		await db.collection("users").doc(user.uid).collection("recipes").doc(this.id).delete();
+		this.pendingChanges = false;
+	}
+
+	deleteRecipe() {
+		let dialog = this.$q.dialog({
+			title: "Delete recipe",
+			message: "Are you really sure? No going back after this!",
+			type: "warning",
+			ok: "Delete",
+			cancel: true,
+			noBackdropDismiss: true,
+			noEscDismiss: true
+		}).onOk(async () => {
+			dialog.update({
+				ok: false,
+				cancel: false,
+				progress: true
+			});
+			await this.doDelete();
+			this.$q.dialog({
+				title: "Recipe deleted",
+				type: "success"
+			});
+			await this.closeRecipe();
+		});
+	}
+
+	editRecipe() {
+		const db = this.$firebase.firestore();
+		const user = this.$firebase.auth().currentUser;
+		if (!user || !this.id) {
+			this.$logout();
+			return;
+		}
+		const userDoc = db.collection("users").doc(user.uid);
+		const docReference = userDoc.collection("recipes").doc(this.id);
+		docReference.get().then(async doc => {
+			const it = doc.data();
+			if (it && it.locked && it.locked !== "" && it.locked !== this.$sessionId) {
+				const session = await userDoc.collection("sessions").doc(it.locked).get();
+				if (!session.exists) {
+					await docReference.update({locked: ""});
+					this.pendingChanges = true;
+				} else {
+					this.$q.dialog({
+						title: "Cannot open recipe",
+						message: "This recipe is being edited on another instance of YACL Cookbook",
+						type: "error"
+					});
+				}
+			} else {
+				this.pendingChanges = true;
+			}
+		});
+	}
+
+	cleanup() {
+		if (this.unsubscribe) {this.unsubscribe();}
+		if (this.pendingChanges) {
+			const db = this.$firebase.firestore();
+			const user = this.$firebase.auth().currentUser;
+			if (user && this.id) {
+				db.collection("users").doc(user.uid).collection("recipes").doc(this.id).update({
+					locked: ""
+				});
+			}
+		}
+	}
+
+	init(to: Route | null = null) {
+		this.id = (to ?? this.$route).params.id;
+		this.yaml = "";
+		this.recipe = null;
+		this.pendingChanges = false;
+		const db = this.$firebase.firestore();
+		const docId = this.id;
+		const user = this.$firebase.auth().currentUser;
+		if (!user) {
+			this.$logout();
+			return;
+		}
+		const userDoc = db.collection("users").doc(user.uid);
+		const docReference = userDoc.collection("recipes").doc(docId);
+		docReference.get().then(doc => {
+			const it = doc.data();
+			if (it) {
+				this.yaml = it.yacl;
+				this.loadRecipe();
+			}
+		});
+		this.unsubscribe = docReference.onSnapshot(doc => {
+			if (!this.pendingChanges && !doc.metadata.hasPendingWrites) {
+				const it = doc.data();
+				if (it && it.locked && it.locked !== "" && it.locked !== this.$sessionId) {
+					this.$q.dialog({
+						title: "Locking editing",
+						message: "This recipe is being edited on another instance of YACL Cookbook",
+						type: "warning"
+					});
+					this.cmOptions.readOnly = true;
+				} else {
+					if (this.cmOptions.readOnly) {
+						this.cmOptions.readOnly = false;
+						this.$q.dialog({
+							title: "Unlocking editing",
+							message: "You can now edit this recipe",
+							type: "success"
+						});
+					}
+				}
+				if (it) {
+					this.yaml = it.yacl;
+					this.loadRecipe();
+				}
+			}
+		});
+
+	}
+
+	mounted() {
+		this.init();
+	}
+
+	beforeRouteUpdate(to: Route, from: Route, next: NavigationGuardNext) {
+		this.init(to);
+		next();
+	}
+
+	beforeRouteLeave(to: Route, from: Route, next: NavigationGuardNext) {
+		this.cleanup();
+		next();
+	}
+
+	beforeDestroy() {
+		this.cleanup();
+	}
+};
+</script>
+
+<style lang="scss" scoped>
+#editor {
+	display: flex;
+	flex-direction: column;
+}
+
+.yaml-textarea {
+	flex-grow: 1;
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
+.recipe-viewer {
+
+	.header {
+		display: flex;
+		padding: 20px;
+		align-items: stretch;
+
+		@media (max-width: 600px) {
+			flex-direction: column-reverse;
+		}
+
+		.info {
+			flex: 1 0 50%;
+			padding-right: 20px;
+
+			.name {
+				margin: 0 0 10px;
+			}
+
+			.desc {
+				font-style: italic;
+			}
+
+			.tags {
+				display: flex;
+				flex-wrap: wrap;
+				margin: 0;
+				padding: 5px 0;
+			}
+
+			.time {
+				padding: 10px 0;
+			}
+		}
+
+		.image {
+			flex: 1 1 50%;
+			width: 100%;
+			background-position: center;
+			background-size: contain;
+			background-repeat: no-repeat;
+			margin-bottom: 20px;
+
+			@media (max-width: 600px) {
+				min-height: 30vh;
+			}
+		}
+	}
+}
+</style>
+<style lang="scss">
+.CodeMirror {
+	flex-grow: 1;
+}
+
+.q-timeline__subtitle {
+	opacity: 1 !important;
+}
+</style>

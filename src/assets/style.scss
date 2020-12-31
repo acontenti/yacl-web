@@ -107,18 +107,6 @@ footer {
 	text-transform: uppercase;
 }
 
-.editor-toolbar {
-	padding: 5px;
-	display: flex;
-	flex-direction: row;
-	border: 0 solid;
-	border-bottom-width: 3px;
-}
-
-.editor-toolbar * + * {
-	margin-left: 5px;
-}
-
 .github-corner {
 	position: absolute;
 	right: 0;
