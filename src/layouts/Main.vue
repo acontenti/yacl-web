@@ -1,6 +1,7 @@
 <template>
 	<q-layout view="LHh LpR fFf">
 		<q-header elevated>
+			<app-bar/>
 			<q-toolbar>
 				<q-btn v-if="$route.name !== 'app'" dense flat icon="arrow_back" round
 					   @click="$router.push({name:'app'})">
@@ -43,8 +44,10 @@
 import Utils from "src/util/utils";
 import {Component, Vue} from "vue-property-decorator";
 import firebase from "firebase/app";
-
-@Component
+import AppBar from "components/AppBar.vue";
+@Component({
+	components: {AppBar}
+})
 export default class Main extends Vue {
 	user: firebase.UserInfo | null = this.$firebase.auth().currentUser;
 

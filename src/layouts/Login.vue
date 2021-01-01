@@ -1,5 +1,6 @@
 <template>
 	<q-layout id="login">
+		<app-bar header/>
 		<q-form class="q-gutter-md column items-center" @submit="login">
 			<h3 class="q-my-sm">YACL COOKBOOK</h3>
 			<q-input v-model="email" label="E-mail" type="email"/>
@@ -15,8 +16,10 @@
 
 <script lang="ts">
 import {Component, Vue} from "vue-property-decorator";
+import AppBar from "components/AppBar.vue";
 
 @Component({
+	components: {AppBar},
 	meta: {
 		titleTemplate: (title: string) => `${title} - Login`
 	}

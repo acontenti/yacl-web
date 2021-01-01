@@ -22,9 +22,9 @@
 					<div class="tags">
 						<q-chip v-for="(tag, i) in recipe.tags" :key="'tag-' + i" :label="tag"/>
 					</div>
-					<div class="category"><strong>Category:</strong> {{ recipe.category }}</div>
-					<div class="quantity"><strong>Quantity:</strong> {{ recipe.quantity }}</div>
-					<div class="source"><strong>Source:</strong> {{ recipe.source || "unknown" }}</div>
+					<div class="category"><strong>Category: </strong>{{ recipe.category }}</div>
+					<div class="quantity"><strong>Quantity: </strong>{{ recipe.quantity }}</div>
+					<div class="source"><strong>Source: </strong><span v-html="recipeSource"/></div>
 					<div class="time">
 						<div class="total"><strong>Total time:</strong> {{ getTotalTime() | formatTime }}</div>
 						<div><strong>Preparation time:</strong> {{ getTime("prep") | formatTime }}</div>
@@ -32,15 +32,13 @@
 						<div><strong>Waiting time:</strong> {{ getTime("wait") | formatTime }}</div>
 					</div>
 				</div>
-				<div v-show="recipe.image !== undefined && recipe.image !== ''"
-					 :style="'background-image: url(\'' + recipe.image + '\')'" class="image"/>
+				<q-img v-if="recipe.image" :ratio="21/9" :src="recipe.image" contain class="q-mb-md"/>
 			</div>
 			<div :class="{row: $q.screen.gt.sm}" class="no-wrap items-start">
 				<q-table v-if="recipe.ingredients" :columns="ingredientsColumns" :data="ingredients"
 						 :rows-per-page-options="[0]" :selected.sync="selectedIngredients" bordered
-						 class="q-mx-md" flat hide-pagination hide-selected-banner row-key="name"
-						 selection="multiple" separator="cell" style="min-width: 350px"
-						 table-header-class="text-uppercase">
+						 class="q-mx-md" flat hide-bottom hide-header row-key="id" selection="multiple"
+						 separator="cell" style="min-width: 350px" table-header-class="text-uppercase">
 					<template v-slot:top-left>
 						<h4 class="q-mt-none q-mb-sm">Ingredients</h4>
 					</template>
@@ -56,15 +54,22 @@
 						</q-toolbar>
 					</template>
 					<template v-slot:body="props">
-						<q-tr :props="props">
+						<q-tr v-if="props.row.sectionFirst" :key="`s_${props.row.index}`" :props="props" no-hover>
+							<q-td colspan="100%">
+								<div class="text-subtitle1 text-uppercase text-bold">
+									Section {{ props.row.sectionIndex }}
+								</div>
+							</q-td>
+						</q-tr>
+						<q-tr :key="`i_${props.row.index}`" :props="props">
 							<q-td auto-width>
 								<q-checkbox v-model="props.selected"/>
 							</q-td>
 							<q-td key="name" :props="props" auto-width>
-								{{ props.row.name }}
+								<div class="text-subtitle1">{{ props.row.name }}</div>
 							</q-td>
 							<q-td key="quantity" :props="props">
-								{{ props.row.quantity }}
+								<div class="text-subtitle1">{{ props.row.quantity }}</div>
 							</q-td>
 						</q-tr>
 					</template>
@@ -73,12 +78,14 @@
 							class="q-px-lg q-my-none q-py-md q-table--bordered q-table__card q-table--flat"
 							style="width: auto;">
 					<q-timeline-entry heading tag="h4">Instructions</q-timeline-entry>
-					<q-timeline-entry v-for="(instruction, i) in recipe.instructions"
-									  :key="'instruction-' + i" :body="instruction.text || instruction"
+					<q-timeline-entry v-for="(instruction, i) in recipe.instructions" :key="'instruction-' + i"
 									  :icon="getTypeIcon(instruction.type)">
 						<template v-slot:subtitle>
 							<span class="text-subtitle1 text-bold">Step {{ i + 1 }}:&ensp;</span>
 							<span class="text-subtitle2">{{ instruction.time | parseTime | formatTime }}</span>
+						</template>
+						<template v-slot:default>
+							<div class="text-body1">{{ instruction.text || instruction }}</div>
 						</template>
 					</q-timeline-entry>
 				</q-timeline>
@@ -99,6 +106,7 @@ import humanizeDuration from "humanize-duration";
 import {Instruction, InstructionType, Recipe} from "src/util/model";
 import {NavigationGuardNext, Route} from "vue-router/types/router";
 import CodeMirror from "codemirror";
+import {Autolinker} from "autolinker";
 
 @Component<RecipeComponent>({
 	components: {
@@ -124,7 +132,6 @@ export default class RecipeComponent extends Vue {
 	id: string | null = null;
 	yaml: string | null = null;
 	recipe: Recipe | null = null;
-	recipeName = "";
 	pendingChanges = false;
 	scaleFactor = 1;
 	mode: string | null = null;
@@ -136,28 +143,53 @@ export default class RecipeComponent extends Vue {
 	selectedIngredients = [];
 	ingredientsColumns = [
 		{
+			name: "id",
+			field: "id"
+		},
+		{
 			name: "name",
 			label: "Name",
 			field: "name",
 			align: "left",
-			sortable: true,
 			classes: "text-bold text-capitalize"
 		},
 		{
-			name: "quantity", label: "Quantity", field: "quantity",
-			align: "left", sortable: true
+			name: "quantity",
+			label: "Quantity",
+			field: "quantity",
+			align: "left"
 		}
 	];
 	unsubscribe: (() => void) | null = null;
-	title= "";
+	title = "";
 
 	get ingredients() {
 		if (!this.recipe?.ingredients) return [];
 		let ingredients = Array.isArray(this.recipe.ingredients) ? this.recipe.ingredients : [this.recipe.ingredients];
-		return ingredients.map(section => Object.entries(section).map(([name, quantity]) => ({
+		return ingredients.map((section, si) => Object.entries(section).map(([name, quantity], index) => ({
+			id: si + ":" + name,
 			name: name,
-			quantity: this.computedQuantity(quantity) + " " + this.computedUnit(quantity)
+			quantity: this.computedQuantity(quantity) + " " + this.computedUnit(quantity),
+			sectionIndex: si + 1,
+			...(index == 0 && ingredients.length > 1 ? {sectionFirst: true} : {})
 		}))).reduce((previousValue, currentValue) => previousValue.concat(currentValue), []);
+	}
+
+	get recipeSource() {
+		if (this.recipe?.source) {
+			return Autolinker.link(this.recipe.source, {
+				email: false,
+				hashtag: false,
+				mention: false,
+				phone: false,
+				sanitizeHtml: true,
+				newWindow: true,
+				stripPrefix: false,
+				className: "text-lowercase"
+			});
+		} else {
+			return "unknown";
+		}
 	}
 
 	static isInstruction(it: Instruction | string): it is Instruction {
@@ -216,8 +248,7 @@ export default class RecipeComponent extends Vue {
 
 	loadRecipe() {
 		this.recipe = jsyaml.safeLoad(this.yaml ?? "") as Recipe | null;
-		this.recipeName = this.recipe?.name ?? "";
-		this.title = "YACL - " + this.recipeName;
+		this.title = "YACL - " + this.recipe?.name;
 	}
 
 	async save() {
@@ -481,19 +512,6 @@ export default class RecipeComponent extends Vue {
 
 			.time {
 				padding: 10px 0;
-			}
-		}
-
-		.image {
-			flex: 1 1 50%;
-			width: 100%;
-			background-position: center;
-			background-size: contain;
-			background-repeat: no-repeat;
-			margin-bottom: 20px;
-
-			@media (max-width: 600px) {
-				min-height: 30vh;
 			}
 		}
 	}
