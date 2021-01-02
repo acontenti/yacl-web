@@ -2,21 +2,20 @@
 
 Yet Another Cookbook Language
 
-## Install the dependencies
+### Install the dependencies
 ```bash
 yarn
 ```
 
-### Start the app in development mode (hot-code reloading, error reporting, etc.)
+### Start the app in development mode
 ```bash
-quasar dev
+yarn dev
 ```
 
 
 ### Build the app for production
 ```bash
-quasar build
+yarn build
 ```
 
-### Customize the configuration
-See [Configuring quasar.conf.js](https://quasar.dev/quasar-cli/quasar-conf-js).
+	Copyright © 2019-2021 Alessandro Contenti

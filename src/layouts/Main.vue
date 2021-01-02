@@ -9,7 +9,7 @@
 				</q-btn>
 				<q-toolbar-title shrink>YACL COOKBOOK</q-toolbar-title>
 				<q-space/>
-				<portal-target name="toolbar"></portal-target>
+				<portal-target class="row no-wrap" name="toolbar"></portal-target>
 				<q-btn flat icon="add" no-wrap round @click="newRecipe">
 					<q-tooltip>New recipe</q-tooltip>
 				</q-btn>
@@ -45,6 +45,7 @@ import Utils from "src/util/utils";
 import {Component, Vue} from "vue-property-decorator";
 import firebase from "firebase/app";
 import AppBar from "components/AppBar.vue";
+
 @Component({
 	components: {AppBar}
 })

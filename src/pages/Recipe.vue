@@ -54,14 +54,14 @@
 						</q-toolbar>
 					</template>
 					<template v-slot:body="props">
-						<q-tr v-if="props.row.sectionFirst" :key="`s_${props.row.index}`" :props="props" no-hover>
+						<q-tr v-if="props.row.sectionFirst" :key="`s_${props.row.id}`" :props="props" no-hover>
 							<q-td colspan="100%">
 								<div class="text-subtitle1 text-uppercase text-bold">
 									Section {{ props.row.sectionIndex }}
 								</div>
 							</q-td>
 						</q-tr>
-						<q-tr :key="`i_${props.row.index}`" :props="props">
+						<q-tr :key="`i_${props.row.id}`" :props="props">
 							<q-td auto-width>
 								<q-checkbox v-model="props.selected"/>
 							</q-td>

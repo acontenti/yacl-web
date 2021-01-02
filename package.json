@@ -8,9 +8,12 @@
 	"scripts": {
 		"dev": "quasar dev",
 		"build": "quasar build",
+		"dev:pwa": "quasar dev -m pwa",
+		"build:pwa": "quasar build -m pwa",
 		"dev:electron": "quasar dev -m electron",
 		"build:electron": "quasar build -m electron",
-		"deploy": "firebase deploy"
+		"deploy": "firebase deploy",
+		"clean": "bash -c \"find node_modules -path '*/node_modules/@types*' -delete\""
 	},
 	"dependencies": {
 		"@quasar/extras": "^1.0.0",
@@ -34,10 +37,12 @@
 		"@types/codemirror": "^0.0.103",
 		"@types/humanize-duration": "^3.18.1",
 		"@types/js-yaml": "^3.12.5",
-		"devtron": "^1.4.0",
+		"@types/node": "^10.17.15",
 		"electron": "^9.0.0",
 		"electron-debug": "^3.0.1",
-		"electron-devtools-installer": "^3.0.0"
+		"electron-devtools-installer": "^3.0.0",
+		"electron-packager": "^14.1.1",
+		"workbox-webpack-plugin": "^5.0.0"
 	},
 	"browserslist": [
 		"last 10 Chrome versions",
