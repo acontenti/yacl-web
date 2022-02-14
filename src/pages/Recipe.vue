@@ -11,7 +11,7 @@
 				<q-tooltip>Delete recipe</q-tooltip>
 			</q-btn>
 		</portal>
-		<codemirror v-if="pendingChanges" v-model="yaml" :options="cmOptions" class="yaml-textarea"/>
+		<codemirror v-if="pendingChanges" v-model="yaml" :options="cmOptions" class="yaml-textarea" />
 		<div v-if="recipe && !pendingChanges" class="recipe-viewer">
 			<div class="header">
 				<div class="info">
@@ -20,37 +20,38 @@
 					</h3>
 					<div class="desc">{{ recipe.description }}</div>
 					<div class="tags">
-						<q-chip v-for="(tag, i) in recipe.tags" :key="'tag-' + i" :label="tag"/>
+						<q-chip v-for="(tag, i) in recipe.tags" :key="'tag-' + i" :label="tag" />
 					</div>
+					<div class="quantity"><strong>Quantity: </strong>{{ quantity }}</div>
 					<div class="category"><strong>Category: </strong>{{ recipe.category }}</div>
-					<div class="quantity"><strong>Quantity: </strong>{{ recipe.quantity }}</div>
-					<div class="source"><strong>Source: </strong><span v-html="recipeSource"/></div>
+					<div class="category"><strong>Cuisine: </strong>{{ recipe.cuisine }}</div>
+					<div class="source"><strong>Source: </strong><span v-html="recipeSource" /></div>
 					<div class="time">
-						<div class="total"><strong>Total time:</strong> {{ getTotalTime() | formatTime }}</div>
-						<div><strong>Preparation time:</strong> {{ getTime("prep") | formatTime }}</div>
-						<div><strong>Cooking time:</strong> {{ getTime("cook") | formatTime }}</div>
-						<div><strong>Waiting time:</strong> {{ getTime("wait") | formatTime }}</div>
+						<div class="total"><strong>Total time:</strong> {{ getTotalTime() | formatDuration }}</div>
+						<div><strong>Preparation time:</strong> {{ getTime("prep") | formatDuration }}</div>
+						<div><strong>Cooking time:</strong> {{ getTime("cook") | formatDuration }}</div>
+						<div><strong>Waiting time:</strong> {{ getTime("wait") | formatDuration }}</div>
 					</div>
 				</div>
-				<q-img v-if="recipe.image" :ratio="21/9" :src="recipe.image" contain class="q-mb-md"/>
+				<q-img v-if="recipe.image" :ratio="21/9" :src="recipe.image" class="q-mb-md" contain />
 			</div>
 			<div :class="{row: $q.screen.gt.sm}" class="no-wrap items-start">
 				<q-table v-if="recipe.ingredients" :columns="ingredientsColumns" :data="ingredients"
-						 :rows-per-page-options="[0]" :selected.sync="selectedIngredients" bordered
-						 class="q-mx-md" flat hide-bottom hide-header row-key="id" selection="multiple"
-						 separator="cell" style="min-width: 350px" table-header-class="text-uppercase">
+					:rows-per-page-options="[0]" :selected.sync="selectedIngredients" bordered
+					class="q-mx-md q-mb-md" flat hide-bottom hide-header row-key="id" selection="multiple"
+					separator="cell" style="min-width: 350px" table-header-class="text-uppercase">
 					<template v-slot:top-left>
 						<h4 class="q-mt-none q-mb-sm">Ingredients</h4>
 					</template>
 					<template v-slot:top-right>
 						<q-toolbar>
 							<q-btn-toggle v-model="mode"
-										  :options="[{label:'Original', value:null},{label:'Metric', value: 'metric'}]"
-										  class="q-mr-md" color="white" rounded
-										  style="border: 1px solid var(--q-color-primary)" text-color="primary"
-										  toggle-color="primary" unelevated/>
+								:options="[{label:'Original', value:null},{label:'Metric', value: 'metric'}]"
+								class="q-mr-md" color="white" rounded
+								style="border: 1px solid var(--q-color-primary)" text-color="primary"
+								toggle-color="primary" unelevated />
 							<q-input v-model.number="scaleFactor" dense label="Scale:" max="100" min="0" outlined
-									 step="0.25" type="number"/>
+								step="0.25" type="number" />
 						</q-toolbar>
 					</template>
 					<template v-slot:body="props">
@@ -63,7 +64,7 @@
 						</q-tr>
 						<q-tr :key="`i_${props.row.id}`" :props="props">
 							<q-td auto-width>
-								<q-checkbox v-model="props.selected"/>
+								<q-checkbox v-model="props.selected" />
 							</q-td>
 							<q-td key="name" :props="props" auto-width>
 								<div class="text-subtitle1">{{ props.row.name }}</div>
@@ -75,17 +76,39 @@
 					</template>
 				</q-table>
 				<q-timeline v-if="recipe.instructions"
-							class="q-px-lg q-my-none q-py-md q-table--bordered q-table__card q-table--flat"
-							style="width: auto;">
-					<q-timeline-entry heading tag="h4">Instructions</q-timeline-entry>
-					<q-timeline-entry v-for="(instruction, i) in recipe.instructions" :key="'instruction-' + i"
-									  :icon="getTypeIcon(instruction.type)">
+					class="q-px-lg q-my-none q-py-md q-table--bordered q-table__card q-table--flat"
+					style="width: auto;">
+					<q-timeline-entry heading tag="div">
+						<div class="text-h4 inline-block">Instructions</div>
+						<q-input :value="startTime" class="q-ml-lg q-pa-none inline-block"
+							hide-bottom-space label="Start time:" mask="time" outlined readonly>
+							<template v-slot:prepend>
+								<q-icon class="cursor-pointer" name="access_time" />
+							</template>
+							<q-popup-proxy cover transition-hide="scale" transition-show="scale">
+								<q-time v-model="startTime" format24h now-btn>
+									<div class="row items-center justify-end">
+										<q-btn v-close-popup color="primary" flat label="Close" />
+									</div>
+								</q-time>
+							</q-popup-proxy>
+						</q-input>
+					</q-timeline-entry>
+					<q-timeline-entry v-for="instruction in instructions" :key="instruction.index"
+						:icon="instruction.typeIcon">
 						<template v-slot:subtitle>
-							<span class="text-subtitle1 text-bold">Step {{ i + 1 }}:&ensp;</span>
-							<span class="text-subtitle2">{{ instruction.time | parseTime | formatTime }}</span>
+							<div class="full-width flex flex-center" style="margin-top: -5px">
+								<span class="text-subtitle1 text-bold">Step {{ instruction.index }}</span>
+								<q-chip v-if="instruction.time" dense icon="timer" class="q-ml-sm">
+									{{ instruction.time | parseTime | formatDuration }}
+								</q-chip>
+								<q-chip class="q-ml-auto q-mr-xs" dense icon="schedule">
+									{{ instruction.startTime }}
+								</q-chip>
+							</div>
 						</template>
 						<template v-slot:default>
-							<div class="text-body1">{{ instruction.text || instruction }}</div>
+							<div class="text-body1 q-mb-md">{{ instruction.text || instruction }}</div>
 						</template>
 					</q-timeline-entry>
 				</q-timeline>
@@ -107,6 +130,13 @@ import {Instruction, InstructionType, Recipe} from "src/util/model";
 import {NavigationGuardNext, Route} from "vue-router/types/router";
 import CodeMirror from "codemirror";
 import {Autolinker} from "autolinker";
+import {date} from "quasar";
+
+interface InstructionInfo extends Instruction {
+	index: number;
+	startTime: string;
+	typeIcon: string;
+}
 
 @Component<RecipeComponent>({
 	components: {
@@ -121,7 +151,7 @@ import {Autolinker} from "autolinker";
 		parseTime(time: string) {
 			return time ? parseTime(time) : undefined;
 		},
-		formatTime(millis: number) {
+		formatDuration(millis: number) {
 			if (millis && millis > 0)
 				return humanizeDuration(millis);
 			else return undefined;
@@ -134,6 +164,7 @@ export default class RecipeComponent extends Vue {
 	recipe: Recipe | null = null;
 	pendingChanges = false;
 	scaleFactor = 1;
+	startTime = date.formatDate(new Date(), "HH:mm");
 	mode: string | null = null;
 	cmOptions: CodeMirror.EditorConfiguration = {
 		mode: "yaml",
@@ -163,6 +194,14 @@ export default class RecipeComponent extends Vue {
 	unsubscribe: (() => void) | null = null;
 	title = "";
 
+	get quantity() {
+		let quantity = this.recipe?.quantity;
+		if (!quantity) return "";
+		return quantity.toString().replace(/\d+/g, n => {
+			return (Number(n) * this.scaleFactor).toString();
+		});
+	}
+
 	get ingredients() {
 		if (!this.recipe?.ingredients) return [];
 		let ingredients = Array.isArray(this.recipe.ingredients) ? this.recipe.ingredients : [this.recipe.ingredients];
@@ -173,6 +212,21 @@ export default class RecipeComponent extends Vue {
 			sectionIndex: si + 1,
 			...(index == 0 && ingredients.length > 1 ? {sectionFirst: true} : {})
 		}))).reduce((previousValue, currentValue) => previousValue.concat(currentValue), []);
+	}
+
+	get instructions(): InstructionInfo[] {
+		if (!this.recipe?.instructions) return [];
+		return this.recipe.instructions.map((value, index) => {
+			let item: Instruction = RecipeComponent.isInstruction(value) ? value : {text: value};
+			return <InstructionInfo>{
+				index: index + 1,
+				text: item.text,
+				time: item.time,
+				startTime: date.formatDate(this.getRunningTime(index) + date.extractDate(this.startTime, "HH:mm").getTime(), "HH:mm"),
+				type: item.type,
+				typeIcon: this.getTypeIcon(item.type)
+			};
+		});
 	}
 
 	get recipeSource() {
@@ -208,14 +262,22 @@ export default class RecipeComponent extends Vue {
 		}, 0) ?? 0;
 	}
 
-	getTypeIcon(type: InstructionType) {
+	getRunningTime(to: number) {
+		return this.recipe?.instructions?.slice(0, to).reduce<number>((last: number, it: Instruction | string) => {
+			if (RecipeComponent.isInstruction(it) && it.time) {
+				return last + (parseTime(it.time) ?? 0);
+			} else return last;
+		}, 0) ?? 0;
+	}
+
+	getTypeIcon(type?: InstructionType) {
 		switch (type) {
 			case "cook":
 				return "microwave";
 			case "prep":
 				return "local_dining";
 			case "wait":
-				return "update";
+				return "hourglass_empty";
 			default:
 				return null;
 		}
@@ -247,7 +309,7 @@ export default class RecipeComponent extends Vue {
 	}
 
 	loadRecipe() {
-		this.recipe = jsyaml.safeLoad(this.yaml ?? "") as Recipe | null;
+		this.recipe = jsyaml.load(this.yaml ?? "") as Recipe | null;
 		this.title = "YACL - " + this.recipe?.name;
 	}
 
