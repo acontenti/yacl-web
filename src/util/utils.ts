@@ -65,14 +65,15 @@ export default class Utils {
 	}
 
 	static getEmptyRecipe(name: string): string {
-		return "name: " + name + "\n" +
-			"description:\n" +
-			"quantity:\n" +
-			"category:\n" +
-			"cuisine:\n" +
-			"image:\n" +
-			"tags:\n" +
-			"ingredients:\n" +
-			"instructions:\n";
+		return `name: ${name}
+description:
+quantity:
+category:
+cuisine:
+image:
+tags:
+ingredients:
+instructions:
+`;
 	}
 }

@@ -1,14 +1,14 @@
 <template>
 	<q-layout view="LHh LpR fFf">
 		<q-header elevated>
-			<app-bar/>
+			<app-bar />
 			<q-toolbar>
 				<q-btn v-if="$route.name !== 'app'" dense flat icon="arrow_back" round
-					   @click="$router.push({name:'app'})">
+					@click="$router.push({name:'app'})">
 					<q-tooltip>Back</q-tooltip>
 				</q-btn>
 				<q-toolbar-title shrink>YACL COOKBOOK</q-toolbar-title>
-				<q-space/>
+				<q-space />
 				<portal-target class="row no-wrap" name="toolbar"></portal-target>
 				<q-btn flat icon="add" no-wrap round @click="newRecipe">
 					<q-tooltip>New recipe</q-tooltip>
@@ -19,9 +19,21 @@
 						<q-menu auto-close fit>
 							<q-list>
 								<q-item-label header>{{ user.displayName }}'s cookbook</q-item-label>
+								<q-item clickable @click="importRecipes">
+									<q-item-section side>
+										<q-icon name="file_upload" />
+									</q-item-section>
+									<q-item-section>Import recipes</q-item-section>
+								</q-item>
+								<q-item clickable @click="exportRecipes">
+									<q-item-section side>
+										<q-icon name="file_download" />
+									</q-item-section>
+									<q-item-section>Export all recipes</q-item-section>
+								</q-item>
 								<q-item clickable @click="$logout">
-									<q-item-section avatar>
-										<q-icon name="logout"/>
+									<q-item-section side>
+										<q-icon name="logout" />
 									</q-item-section>
 									<q-item-section>Logout</q-item-section>
 								</q-item>
@@ -32,7 +44,7 @@
 			</q-toolbar>
 		</q-header>
 		<q-page-container>
-			<router-view/>
+			<router-view />
 		</q-page-container>
 		<q-footer bordered class="bg-grey-14 q-px-sm q-py-xs text-left">
 			Copyright &copy; 2019-{{ new Date().getFullYear() }}, Alessandro Contenti
@@ -45,6 +57,8 @@ import Utils from "src/util/utils";
 import {Component, Vue} from "vue-property-decorator";
 import firebase from "firebase/app";
 import AppBar from "components/AppBar.vue";
+import {exportFile} from "quasar";
+import FileUploader from "components/FileUploader.vue";
 
 @Component({
 	components: {AppBar}
@@ -63,18 +77,45 @@ export default class Main extends Vue {
 				model: "",
 				isValid: (val: string) => !!val
 			},
-			cancel: true,
-			persistent: true
+			cancel: true
 		}).onOk(async (name?: string) => {
 			if (name && this.user) {
 				const db = this.$firebase.firestore();
 				let doc = await db.collection("users").doc(this.user.uid).collection("recipes").add({
-					name: name,
 					yacl: Utils.getEmptyRecipe(name)
 				});
 				await this.$router.push({name: "recipe", params: {id: doc.id}});
 			}
 		});
+	}
+
+	importRecipes() {
+		this.$q.dialog({
+			component: FileUploader,
+			persistent: true
+		});
+	}
+
+	exportRecipes() {
+		if (this.user) {
+			const db = this.$firebase.firestore();
+			let recipesRef = db.collection("users").doc(this.user.uid).collection("recipes");
+			const recipes: string[] = [];
+			recipesRef.get().then(querySnapshot => {
+				querySnapshot.forEach(doc => {
+					try {
+						const it = doc.data();
+						recipes.push(it.yacl);
+					} catch (e) {
+						console.debug(e);
+					}
+				});
+				const result = recipes.join("\n---\n");
+				if (!exportFile("yacl-cookbook.yaml", result, "text/yaml")) {
+
+				}
+			});
+		}
 	}
 
 	mounted() {

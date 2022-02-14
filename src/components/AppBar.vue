@@ -10,7 +10,7 @@
 		</q-bar>
 	</q-header>
 	<q-bar v-else-if="$q.electron" class="q-electron-drag">
-		<q-icon name="laptop_chromebook"/>
+		<q-icon name="local_dining"/>
 		<div>YACL</div>
 		<q-space/>
 		<q-btn dense flat icon="minimize" @click="minimize"/>

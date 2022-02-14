@@ -16,6 +16,7 @@ export interface Recipe {
 	description?: string
 	tags?: string[]
 	category?: string
+	cuisine?: string
 	quantity?: string
 	source?: string
 	image?: string
