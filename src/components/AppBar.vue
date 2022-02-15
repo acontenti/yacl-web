@@ -28,24 +28,24 @@ export default class AppBar extends Vue {
 
 	minimize() {
 		if (process.env.MODE === "electron") {
-			this.$q.electron.remote.BrowserWindow.getFocusedWindow()?.minimize();
+			this.$q.electron.remote.getCurrentWindow().minimize();
 		}
 	}
 
 	maximize() {
 		if (process.env.MODE === "electron") {
-			const win = this.$q.electron.remote.BrowserWindow.getFocusedWindow();
-			if (win?.isMaximized()) {
-				win?.unmaximize();
+			const win = this.$q.electron.remote.getCurrentWindow();
+			if (win.isMaximized()) {
+				win.unmaximize();
 			} else {
-				win?.maximize();
+				win.maximize();
 			}
 		}
 	}
 
 	closeApp() {
 		if (process.env.MODE === "electron") {
-			this.$q.electron.remote.BrowserWindow.getFocusedWindow()?.close();
+			this.$q.electron.remote.getCurrentWindow().close();
 		}
 	}
 }

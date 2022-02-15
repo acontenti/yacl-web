@@ -27,6 +27,7 @@ function createWindow() {
 		useContentSize: true,
 		frame: false,
 		webPreferences: {
+			enableRemoteModule: true,
 			// Change from /quasar.conf.js > electron > nodeIntegration;
 			// More info: https://quasar.dev/quasar-cli/developing-electron-apps/node-integration
 			nodeIntegration: process.env.QUASAR_NODE_INTEGRATION,
