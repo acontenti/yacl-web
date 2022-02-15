@@ -19,7 +19,7 @@
 					<div class="desc text-subtitle1">{{ recipe.description }}</div>
 					<div class="tags">
 						<router-link v-for="(tag, i) in recipe.tags" :key="'tag-' + i"
-							:to="{name:'app', query:{search:tag}}">
+							:to="{name:'app', query:{search:tag}}" style="text-decoration: none">
 							<q-chip :label="tag" clickable icon="local_offer" />
 						</router-link>
 					</div>
@@ -30,13 +30,13 @@
 					<div v-if="getTotalTime() > 0" class="time">
 						<q-chip icon="timer"><strong>Total time:&nbsp;</strong>{{ getTotalTime() | formatDuration }}
 						</q-chip>
-						<q-chip :icon="getTypeIcon('prep')" class="q-px-sm" dense>
+						<q-chip v-if="getTime('prep') > 0" :icon="getTypeIcon('prep')" class="q-px-sm" dense>
 							<strong>Preparation time:&nbsp;</strong>{{ getTime("prep") | formatDuration }}
 						</q-chip>
-						<q-chip :icon="getTypeIcon('cook')" class="q-px-sm" dense>
+						<q-chip v-if="getTime('cook') > 0" :icon="getTypeIcon('cook')" class="q-px-sm" dense>
 							<strong>Cooking time:&nbsp;</strong>{{ getTime("cook") | formatDuration }}
 						</q-chip>
-						<q-chip :icon="getTypeIcon('wait')" class="q-px-sm" dense>
+						<q-chip v-if="getTime('wait') > 0" :icon="getTypeIcon('wait')" class="q-px-sm" dense>
 							<strong>Waiting time:&nbsp;</strong>{{ getTime("wait") | formatDuration }}
 						</q-chip>
 					</div>
