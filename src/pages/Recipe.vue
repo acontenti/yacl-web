@@ -136,7 +136,7 @@ import {Component, Vue} from "vue-property-decorator";
 import humanizeDuration from "humanize-duration";
 import {Instruction, InstructionType, Recipe} from "src/util/model";
 import {NavigationGuardNext, Route} from "vue-router/types/router";
-import CodeMirror from "codemirror";
+import {EditorConfiguration} from "codemirror";
 import {Autolinker} from "autolinker";
 import {date} from "quasar";
 
@@ -174,7 +174,7 @@ export default class RecipeComponent extends Vue {
 	scaleFactor = 1;
 	startTime = date.formatDate(new Date(), "HH:mm");
 	mode: string | null = null;
-	cmOptions: CodeMirror.EditorConfiguration = {
+	cmOptions: EditorConfiguration = {
 		mode: "yaml",
 		readOnly: false,
 		lineNumbers: true
