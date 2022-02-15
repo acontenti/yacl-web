@@ -31,7 +31,7 @@ export default class Login extends Vue {
 
 	login() {
 		this.$firebase.auth().signInWithEmailAndPassword(this.email, this.password).then(() => {
-			this.$router.replace(this.redirect ? {path: this.redirect} : {name: "app"});
+			this.$router.replace(!!this.redirect ? {path: this.redirect} : {name: "app"});
 		}).catch(error => {
 			if (error.code && error.message) {
 				this.$q.dialog({type: "error", message: error.message});

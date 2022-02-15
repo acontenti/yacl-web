@@ -40,9 +40,16 @@ import DocumentData = firebase.firestore.DocumentData;
 import QuerySnapshot = firebase.firestore.QuerySnapshot;
 import capitalize = format.capitalize;
 
-@Component({
-	meta: {
-		titleTemplate(title: string) { return `${title} - Recipes`; }
+@Component<Home>({
+	meta() {
+		return {
+			titleTemplate: (title: string) => `${title} - Recipes`
+		};
+	},
+	watch: {
+		"$route.query.search"(newValue) {
+			this.search = !!newValue ? newValue as string : "";
+		}
 	}
 })
 export default class Home extends Vue {

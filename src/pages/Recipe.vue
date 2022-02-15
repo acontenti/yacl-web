@@ -15,22 +15,30 @@
 		<div v-if="recipe && !pendingChanges" class="recipe-viewer">
 			<div class="header">
 				<div class="info">
-					<h3 class="name">
-						{{ recipe.name }}
-					</h3>
-					<div class="desc">{{ recipe.description }}</div>
+					<div class="name text-h4">{{ recipe.name }}</div>
+					<div class="desc text-subtitle1">{{ recipe.description }}</div>
 					<div class="tags">
-						<q-chip v-for="(tag, i) in recipe.tags" :key="'tag-' + i" :label="tag" />
+						<router-link v-for="(tag, i) in recipe.tags" :key="'tag-' + i"
+							:to="{name:'app', query:{search:tag}}">
+							<q-chip :label="tag" clickable icon="local_offer" />
+						</router-link>
 					</div>
 					<div class="quantity"><strong>Quantity: </strong>{{ quantity }}</div>
 					<div class="category"><strong>Category: </strong>{{ recipe.category }}</div>
 					<div class="category"><strong>Cuisine: </strong>{{ recipe.cuisine }}</div>
 					<div class="source"><strong>Source: </strong><span v-html="recipeSource" /></div>
-					<div class="time">
-						<div class="total"><strong>Total time:</strong> {{ getTotalTime() | formatDuration }}</div>
-						<div><strong>Preparation time:</strong> {{ getTime("prep") | formatDuration }}</div>
-						<div><strong>Cooking time:</strong> {{ getTime("cook") | formatDuration }}</div>
-						<div><strong>Waiting time:</strong> {{ getTime("wait") | formatDuration }}</div>
+					<div v-if="getTotalTime() > 0" class="time">
+						<q-chip icon="timer"><strong>Total time:&nbsp;</strong>{{ getTotalTime() | formatDuration }}
+						</q-chip>
+						<q-chip :icon="getTypeIcon('prep')" class="q-px-sm" dense>
+							<strong>Preparation time:&nbsp;</strong>{{ getTime("prep") | formatDuration }}
+						</q-chip>
+						<q-chip :icon="getTypeIcon('cook')" class="q-px-sm" dense>
+							<strong>Cooking time:&nbsp;</strong>{{ getTime("cook") | formatDuration }}
+						</q-chip>
+						<q-chip :icon="getTypeIcon('wait')" class="q-px-sm" dense>
+							<strong>Waiting time:&nbsp;</strong>{{ getTime("wait") | formatDuration }}
+						</q-chip>
 					</div>
 				</div>
 				<q-img v-if="recipe.image" :ratio="21/9" :src="recipe.image" class="q-mb-md" contain />
@@ -99,7 +107,7 @@
 						<template v-slot:subtitle>
 							<div class="full-width flex flex-center" style="margin-top: -5px">
 								<span class="text-subtitle1 text-bold">Step {{ instruction.index }}</span>
-								<q-chip v-if="instruction.time" dense icon="timer" class="q-ml-sm">
+								<q-chip v-if="instruction.time" class="q-ml-sm" dense icon="timer">
 									{{ instruction.time | parseTime | formatDuration }}
 								</q-chip>
 								<q-chip class="q-ml-auto q-mr-xs" dense icon="schedule">
@@ -142,9 +150,9 @@ interface InstructionInfo extends Instruction {
 	components: {
 		codemirror
 	},
-	meta: function () {
+	meta() {
 		return {
-			title: this.title
+			titleTemplate: (title: string) => `${title} - ${this.title}`
 		};
 	},
 	filters: {
@@ -250,11 +258,11 @@ export default class RecipeComponent extends Vue {
 		return typeof it !== "string";
 	}
 
-	getTotalTime() {
+	getTotalTime(): number {
 		return this.getTime("prep") + this.getTime("cook") + this.getTime("wait");
 	}
 
-	getTime(type: InstructionType) {
+	getTime(type: InstructionType): number {
 		return this.recipe?.instructions?.reduce<number>((last: number, it: Instruction | string) => {
 			if (RecipeComponent.isInstruction(it) && it.time && it.type === type) {
 				return last + (parseTime(it.time) ?? 0);
@@ -262,7 +270,7 @@ export default class RecipeComponent extends Vue {
 		}, 0) ?? 0;
 	}
 
-	getRunningTime(to: number) {
+	getRunningTime(to: number): number {
 		return this.recipe?.instructions?.slice(0, to).reduce<number>((last: number, it: Instruction | string) => {
 			if (RecipeComponent.isInstruction(it) && it.time) {
 				return last + (parseTime(it.time) ?? 0);
@@ -310,7 +318,7 @@ export default class RecipeComponent extends Vue {
 
 	loadRecipe() {
 		this.recipe = jsyaml.load(this.yaml ?? "") as Recipe | null;
-		this.title = "YACL - " + this.recipe?.name;
+		this.title = this.recipe?.name ?? "";
 	}
 
 	async save() {
@@ -323,10 +331,10 @@ export default class RecipeComponent extends Vue {
 			}
 			try {
 				this.loadRecipe();
-			} catch (e) {
+			} catch ({message}) {
 				this.$q.dialog({
 					title: "Cannot save recipe",
-					message: "<pre class=\"exception\">Error:<br>" + e.message + "</pre>",
+					message: `<pre class="exception">Error:<br>${message}</pre>`,
 					html: true,
 					type: "error"
 				});
@@ -562,7 +570,6 @@ export default class RecipeComponent extends Vue {
 			}
 
 			.desc {
-				font-style: italic;
 			}
 
 			.tags {
@@ -574,6 +581,9 @@ export default class RecipeComponent extends Vue {
 
 			.time {
 				padding: 10px 0;
+				display: flex;
+				flex-direction: column;
+				align-items: flex-start;
 			}
 		}
 	}
