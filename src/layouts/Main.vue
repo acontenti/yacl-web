@@ -1,13 +1,15 @@
 <template>
-	<q-layout view="LHh LpR fFf">
+	<q-layout view="hHh LpR fFf">
 		<q-header elevated>
 			<app-bar />
 			<q-toolbar>
-				<q-btn v-if="$route.name !== 'app'" dense flat icon="arrow_back" round
-					@click="$router.push({name:'app'})">
-					<q-tooltip>Back</q-tooltip>
+				<q-btn dense flat icon="menu" round @click="toggleLeftDrawer">
+					<q-tooltip>Menu</q-tooltip>
 				</q-btn>
-				<q-toolbar-title shrink>YACL COOKBOOK</q-toolbar-title>
+				<q-btn :to="{name:'app'}" flat no-caps no-wrap stretch>
+					<q-toolbar-title>YACL COOKBOOK</q-toolbar-title>
+					<q-tooltip>Home</q-tooltip>
+				</q-btn>
 				<q-space />
 				<portal-target class="row no-wrap" name="toolbar"></portal-target>
 				<q-btn flat icon="add" no-wrap round @click="newRecipe">
@@ -43,11 +45,27 @@
 				</q-btn>
 			</q-toolbar>
 		</q-header>
+		<q-drawer v-model="leftDrawerOpen" :width="200" bordered show-if-above side="left">
+			<q-list>
+				<q-item-label header>Categories</q-item-label>
+				<q-item :to="{name:'app'}" exact>
+					<q-item-section>
+						<q-item-label>All</q-item-label>
+					</q-item-section>
+				</q-item>
+				<q-item v-for="category in categories" :key="category"
+					:to="{name:'app', params: {category}}" exact>
+					<q-item-section>
+						<q-item-label>{{ category | capitalize }}</q-item-label>
+					</q-item-section>
+				</q-item>
+			</q-list>
+		</q-drawer>
 		<q-page-container>
 			<router-view />
 		</q-page-container>
 		<q-footer bordered class="bg-grey-14 q-px-sm q-py-xs text-left">
-			Copyright &copy; 2019-{{ new Date().getFullYear() }}, Alessandro Contenti
+			Copyright &copy; 2019-{{ year }}, Alessandro Contenti
 		</q-footer>
 	</q-layout>
 </template>
@@ -57,17 +75,36 @@ import Utils from "src/util/utils";
 import {Component, Vue} from "vue-property-decorator";
 import firebase from "firebase/app";
 import AppBar from "components/AppBar.vue";
-import {exportFile} from "quasar";
+import {exportFile, format} from "quasar";
 import FileUploader from "components/FileUploader.vue";
+import jsyaml from "js-yaml";
+import {Recipe} from "src/util/model";
+import {NavigationGuardNext, Route} from "vue-router/types/router";
+import DocumentData = firebase.firestore.DocumentData;
+import QuerySnapshot = firebase.firestore.QuerySnapshot;
+import capitalize = format.capitalize;
 
 @Component({
-	components: {AppBar}
+	components: {AppBar},
+	filters: {
+		capitalize(string: string) {
+			return capitalize(string);
+		}
+	}
 })
 export default class Main extends Vue {
 	user: firebase.UserInfo | null = this.$firebase.auth().currentUser;
+	leftDrawerOpen = false;
+	year = new Date().getFullYear();
+	categories: string[] = [];
+	unsubscribe: (() => void) | null = null;
 
 	get username() {
 		return this.user?.displayName?.split(" ")?.map(it => it.charAt(0))?.join("")?.substr(0, 2) ?? "?";
+	}
+
+	toggleLeftDrawer() {
+		this.leftDrawerOpen = !this.leftDrawerOpen;
 	}
 
 	newRecipe() {
@@ -118,12 +155,51 @@ export default class Main extends Vue {
 		}
 	}
 
+	loadCategories(querySnapshot: QuerySnapshot<DocumentData>) {
+		const categories = new Set<string>();
+		querySnapshot.forEach(doc => {
+			try {
+				const it = doc.data();
+				const recipe = jsyaml.load(it.yacl) as Recipe | undefined;
+				if (recipe && recipe.category) {
+					categories.add(recipe.category);
+				}
+			} catch (e) {
+				console.debug(e);
+			}
+		});
+		this.categories = Array.from(categories).sort();
+	}
+
+	cleanup() {
+		if (this.unsubscribe) {
+			this.unsubscribe();
+		}
+	}
+
 	mounted() {
 		this.user = this.user ?? this.$firebase.auth().currentUser;
 		if (!this.user) {
 			this.$logout();
 			return;
 		}
+		const db = this.$firebase.firestore();
+		let recipesRef = db.collection("users").doc(this.user.uid).collection("recipes");
+		recipesRef.get().then(querySnapshot => {
+			this.loadCategories(querySnapshot);
+		});
+		this.unsubscribe = recipesRef.onSnapshot(snapshot => {
+			this.loadCategories(snapshot);
+		});
+	}
+
+	beforeRouteLeave(to: Route, from: Route, next: NavigationGuardNext) {
+		this.cleanup();
+		next();
+	}
+
+	beforeDestroy() {
+		this.cleanup();
 	}
 };
 </script>

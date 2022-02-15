@@ -25,13 +25,17 @@ const routes: RouteConfig[] = [
 		children: [
 			{
 				name: "app",
-				path: "",
+				path: "home/:category?",
 				component: Home
 			},
 			{
 				name: "recipe",
 				path: "recipe/:id",
 				component: Recipe
+			},
+			{
+				path: "",
+				redirect: {name: "app"}
 			}
 		]
 	},
